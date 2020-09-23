@@ -1,0 +1,5 @@
+# SciPy
+scipy==1.5.2
+
+# PyTorch
+torch==1.4.0
