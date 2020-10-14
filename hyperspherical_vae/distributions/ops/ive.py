@@ -1,6 +1,5 @@
 import scipy.special
 import torch
-import numpy as np
 
 
 class Ive(torch.autograd.Function):
@@ -10,10 +9,9 @@ class Ive(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, v: float, x: float):
-        ctx._v = v
+    def forward(ctx, v: float, x: torch.Tensor):
+        ctx.v = v
         ctx.save_for_backward(x)
-
         x_cpu = x.detach().cpu().numpy()
 
         # TODO: Original paper uses `np.close(v, 0)` and `np.close(v, 1)` to
@@ -22,18 +20,18 @@ class Ive(torch.autograd.Function):
             v, x_cpu, dtype=x_cpu.dtype
         )  # pylint: disable=no-member
 
-        return torch.Tensor(output).to(x.device)
+        return torch.as_tensor(output, device=x.device)
 
     @staticmethod
     def backward(ctx, grad_output):
-        v = ctx._v
+        v = ctx.v
         (x,) = ctx.saved_tensors
 
         # Only compute a gradient for x, return None for order, v.
         return (
             None,
-            grad_output * (Ive.apply(v - 1, x) + Ive.apply(v, x) * ((v + x) / x)),
+            grad_output * (Ive.apply(v - 1, x) - Ive.apply(v, x) * ((v + x) / x)),
         )
 
 
-ive = Ive.apply
+ive = Ive.apply  # Export the exponentially scaled modified bessel function.
