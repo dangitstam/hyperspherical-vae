@@ -1,12 +1,10 @@
+import math
+
 import torch
 from torch.distributions import constraints
-from torch.distributions.distribution import Distribution
-
 from torch.distributions.beta import Beta
+from torch.distributions.distribution import Distribution
 from torch.distributions.uniform import Uniform
-from torch.distributions.von_mises import VonMises
-
-import math
 
 from hyperspherical_vae.distributions.ops import ive
 
@@ -15,6 +13,7 @@ class VonMisesFisher(Distribution):
     """
     The von Mises–Fisher distribution.
 
+    TODO: Enable multiple implementations (e.g. choose rejection sampling method and whether to use householder).
     TODO: Perhaps buy the Wood (1994) paper...
     """
 
@@ -24,7 +23,9 @@ class VonMisesFisher(Distribution):
     }
     support = constraints.real
 
-    def __init__(self, loc: torch.Tensor, concentration: torch.Tensor, vmf_implementation=""):
+    def __init__(
+        self, loc: torch.Tensor, concentration: torch.Tensor
+    ):
         if loc.dim() < 1:
             raise ValueError("loc must be at least one-dimensional.")
 
@@ -65,17 +66,43 @@ class VonMisesFisher(Distribution):
     def variance(self):
         return None
 
+    @torch.no_grad()
     def sample(self, sample_shape=torch.Size()):
-        """
-        TODO: Currently only samples scalar `w`.
-        TODO: Move implementation to rsample(), implement full sampling algorithm.
-        """
-        shape = self._extended_shape(sample_shape)
-        w = torch.empty(shape, dtype=self.loc.dtype, device=self.loc.device)
-        return self._rejection_sample_prime(self.loc, self.concentration, w)
+        return self.rsample(sample_shape)
 
     def rsample(self, sample_shape=torch.Size()):
-        pass
+        """
+        TODO: Handle `sample_shape` and batched predictions vs. single predictions.
+        """
+        shape = self._extended_shape(sample_shape)
+        batch_size = shape[0]
+
+        # Batched modal vector (1,0,...,0) of size (batch_size, m).
+        e1 = torch.zeros(batch_size, self._m)
+        e1[:, 0] = 1
+
+        # Sample vector v ~ U(S^(m - 2)) by sampling (batch_size, m - 1) values
+        # from a Gaussian and normalize each (m - 1)-sized vector (Muller 1959, Marsaglia 1972).
+        v = torch.randn(batch_size, self._m - 1)
+        v_norm = v.sum(-1)  # Shape: (batch_size,)
+        v_norm = v_norm.unsqueeze(-1)  # Shape: (batch_size, 1)
+        v_norm = v_norm.repeat(1, self._m - 1)  # Shape: (batch_size, self._m - 1)
+
+        v /= v_norm
+
+        # TODO: Allow rejection sample helper functions define the empty starting `w`.
+        w = torch.empty(shape, dtype=self.loc.dtype, device=self.loc.device)
+        w = self._rejection_sample_prime(self.loc, self.concentration, w)
+
+        # Sample z' with modal vector e1 = (w; (1 - w^2) v^T)^T
+        # Shape: (batch_size, m)
+        z_prime = torch.cat([w.unsqueeze(0), (1 - w ** 2) * v.T]).T
+
+        # Shape: (batch_size, m, m)
+        householder_transform = self._householder_transform(self.loc, e1)
+
+        # Shape: (batch_size, m).
+        return torch.matmul(householder_transform, z_prime.unsqueeze(-1)).squeeze(-1)
 
     def log_prob(self, value):
         pass
@@ -187,3 +214,25 @@ class VonMisesFisher(Distribution):
                 done = done | accept
 
         return w
+
+    @staticmethod
+    def _householder_transform(mean: torch.Tensor, e1: torch.Tensor):
+        if mean.dim() < 1:
+            raise ValueError("mean must be at least one-dimensional.")
+
+        batch_size = mean.shape[0]
+        m = mean.shape[-1]
+
+        mean_prime = e1 - mean  # Shape: (batch_size, m)
+        mean_prime /= mean_prime.sum()  # Shape: (batch_size, m)
+
+        # Shape: (batch_size, m, m)
+        batch_identity_matrix = torch.diag(torch.ones(m)).repeat(batch_size, 1, 1)
+
+        # Shape: (batch_size, m, m)
+        householder_transform = batch_identity_matrix - 2 * torch.matmul(
+            mean.unsqueeze(-1),  # Shape: (batch_size, m, 1)
+            mean.unsqueeze(-1).permute(0, 2, 1),  # Shape: (batch_size, 1, m)
+        )
+
+        return householder_transform
