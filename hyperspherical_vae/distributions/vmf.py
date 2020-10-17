@@ -72,14 +72,18 @@ class VonMisesFisher(Distribution):
 
     def rsample(self, sample_shape=torch.Size()):
         """
-        TODO: Handle `sample_shape` and batched predictions vs. single predictions.
+        TODO: Handle `sample_shape` to allow `sample_shape + torch.Size([batch_size, self._m])`-sized predictions.
         """
+        if sample_shape != torch.Size():
+            raise ValueError("sample_shape {} unsupported, currently only batched predictions are supported")
+
         shape = self._extended_shape(sample_shape)
         batch_size = shape[0]
 
-        # Batched modal vector (1,0,...,0) of size (batch_size, m).
-        e1 = torch.zeros(batch_size, self._m)
-        e1[:, 0] = 1
+        # Batched modal vector (1,0,...,0). Shape: (batch_size, m).
+        # Transpose to expose individual vector dimension m, and set the first value of each vector to 1.
+        e1 = torch.zeros(shape + torch.Size([self._m]))
+        e1.T[0] = 1
 
         # Sample vector v ~ U(S^(m - 2)) by sampling (batch_size, m - 1) values
         # from a Gaussian and normalize each (m - 1)-sized vector (Muller 1959, Marsaglia 1972).
