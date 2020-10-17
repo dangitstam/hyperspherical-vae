@@ -23,9 +23,7 @@ class VonMisesFisher(Distribution):
     }
     support = constraints.real
 
-    def __init__(
-        self, loc: torch.Tensor, concentration: torch.Tensor
-    ):
+    def __init__(self, loc: torch.Tensor, concentration: torch.Tensor):
         if loc.dim() < 1:
             raise ValueError("loc must be at least one-dimensional.")
 
@@ -33,8 +31,16 @@ class VonMisesFisher(Distribution):
         if loc.dim() == 1:
             loc = loc.unsqueeze(0)
 
+        # TODO: Some torch distributions will repeat a parameter like this if only one is defined.
+        if loc.shape[0] != concentration.shape[0]:
+            raise ValueError(
+                "batch size for loc ({}) and concentration ({}) differ; concentration should be defined for each mean".format(
+                    loc.shape[0], concentration.shape[0]
+                )
+            )
+
         self.loc = loc  # Shape: (batch_size, m)
-        self.concentration = concentration  # Shape: (batch_size, 1)
+        self.concentration = concentration  # Shape: (batch_size,)
 
         # Distribution is set on the `(self._m - 1)` sphere.
         self._m = self.loc.shape[-1]
@@ -75,7 +81,9 @@ class VonMisesFisher(Distribution):
         TODO: Handle `sample_shape` to allow `sample_shape + torch.Size([batch_size, self._m])`-sized predictions.
         """
         if sample_shape != torch.Size():
-            raise ValueError("sample_shape {} unsupported, currently only batched predictions are supported")
+            raise ValueError(
+                "sample_shape {} unsupported, currently only batched predictions are supported"
+            )
 
         shape = self._extended_shape(sample_shape)
         batch_size = shape[0]
@@ -96,7 +104,7 @@ class VonMisesFisher(Distribution):
 
         # TODO: Allow rejection sample helper functions define the empty starting `w`.
         w = torch.empty(shape, dtype=self.loc.dtype, device=self.loc.device)
-        w = self._rejection_sample_prime(self.loc, self.concentration, w)
+        w = self._rejection_sample_wood(self.loc, self.concentration, w)
 
         # Sample z' with modal vector e1 = (w; (1 - w^2) v^T)^T
         # Shape: (batch_size, m)
@@ -124,14 +132,14 @@ class VonMisesFisher(Distribution):
         pass
 
     @staticmethod
-    def _rejection_sample(
+    def _rejection_sample_ulrich(
         loc: torch.Tensor, concentration: torch.Tensor, w: torch.Tensor
     ):
         """
         The acceptance-rejection sampling scheme from Ulrich (1984), as implemented
         by Davidson et al. in "Hyperspherical Variational Auto-Encoders."
         """
-        batch_size = loc.shape[0]  # also is w.shape[0]
+        batch_size = loc.shape[0]
         m = loc.shape[-1]
 
         b_true = (
@@ -162,29 +170,25 @@ class VonMisesFisher(Distribution):
         done = torch.zeros(w.shape, dtype=torch.bool, device=loc.device)
         while not done.all():
             epsilon = Beta(0.5 * (m - 1), 0.5 * (m - 1)).sample(w.shape)
-            w_attempt = (1 - (1 + b) * epsilon) / (
-                1 - (1 - b) * epsilon
-            )  # TODO: Prime is a better name.
+            w_prime = (1 - (1 + b) * epsilon) / (1 - (1 - b) * epsilon)
             t = (2 * a * b) / (1 - (1 - b) * epsilon)
 
-            # TODO: One sampled vector v per element in the batch of means.
-            u = Uniform(0.0 + 1e-6, 1.0).sample(w.shape)  # TODO: Support batching.
+            u = Uniform(0.0 + 1e-6, 1.0).sample(w.shape)
 
-            # TODO: Unit test that accept == accept_prime?
             accept = (m - 1) * torch.log(t) - t + d >= torch.log(u)
 
             if accept.any():
-                w = torch.where(accept, w_attempt, w)
+                w = torch.where(accept, w_prime, w)
                 done = done | accept
 
         return w
 
     @staticmethod
-    def _rejection_sample_prime(
+    def _rejection_sample_wood(
         loc: torch.Tensor, concentration: torch.Tensor, w: torch.Tensor
     ):
         """
-        An alternative acceptance-rejection sampling scheme that also corresponds to Wood (1994)
+        The acceptance-rejection sampling scheme from Wood (1994).
 
         Based on TensorFlow's implementation:
         https://github.com/tensorflow/probability/blob/v0.11.1/tensorflow_probability/python/distributions/von_mises_fisher.py#L421
@@ -206,7 +210,6 @@ class VonMisesFisher(Distribution):
             epsilon = Beta(0.5 * (m - 1), 0.5 * (m - 1)).sample(w.shape)
             w_prime = (1 - (1 + b) * epsilon) / (1 - (1 - b) * epsilon)
 
-            # TODO: One sampled vector v per element in the batch of means.
             u = Uniform(0.0 + 1e-6, 1.0).sample(w.shape)
 
             accept = concentration * w_prime + (m - 1) * torch.log(
