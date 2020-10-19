@@ -1,5 +1,6 @@
 import math
 
+import scipy.special
 import torch
 from torch.distributions import constraints
 from torch.distributions.beta import Beta
@@ -117,7 +118,7 @@ class VonMisesFisher(Distribution):
         return torch.matmul(householder_transform, z_prime.unsqueeze(-1)).squeeze(-1)
 
     def log_prob(self, value):
-        pass
+        return self._log_prob_unnormalized(value) + self._log_prob_normalization()
 
     def cdf(self, value):
         pass
@@ -129,6 +130,10 @@ class VonMisesFisher(Distribution):
         pass
 
     def entropy(self):
+        """
+        TODO: See KL-divergence derivation in Davidson paper and implement it.
+        TODO: Implement hyperspherical uniform (needed for KL-divergence)
+        """
         pass
 
     @staticmethod
@@ -243,3 +248,22 @@ class VonMisesFisher(Distribution):
         )
 
         return householder_transform
+
+    def _log_prob_unnormalized(self, x: torch.Tensor):
+        return (
+            self.concentration.unsqueeze(-1).repeat(1, 5)
+            * self.loc  # Shape: (batch_size, m)
+            * x  # Shape: (batch_size, m)
+        ).sum(
+            -1
+        )  # Shape: (batch_size,)
+
+    def _log_prob_normalization(self):
+        return (
+            (self._m / 2 - 1) * torch.log(self.concentration)
+            - (self._m / 2) * math.log(2 * math.pi)
+            # TODO: Paper uses `ive`, but log applied to normailzation results in a log(I_v(...)) term:
+            # https://github.com/nicola-decao/s-vae-pytorch/blob/master/hyperspherical_vae/distributions/von_mises_fisher.py#L202
+            # Keeping `log(I_v(...))` to match the algebra more accurately.
+            - torch.log(scipy.special.iv(self._m / 2 - 1, self.concentration))
+        )
