@@ -5,7 +5,7 @@ from torch.distributions.uniform import Uniform
 import math
 
 
-def test_rejection_sample_methods_equivalent_at_low_dimensions():
+def test_rejection_sample_wood_ulrich_methods_not_equivalent():
     """
     Two implementations exist for Wood (1994)'s acceptance-rejection algorithm. This test shows that these
     implementations, while similar in how often they accept or reject, are not identical.
@@ -18,7 +18,6 @@ def test_rejection_sample_methods_equivalent_at_low_dimensions():
     and the implementation from "Spherical Latent Spaces for Stable Variational Autoencoders"
     by Jiacheng Xu, Greg Durrett
     https://github.com/jiacheng-xu/vmf_vae_nlp/blob/master/NVLL/distribution/vmf_only.py#L92
-
     """
     batch_size = 8
     shape = torch.Size([batch_size])
@@ -85,7 +84,6 @@ def test_rejection_sample_methods_equivalent_at_low_dimensions():
                 1 - x_prime * w_attempt
             ) - c_prime >= torch.log(u)
 
-            # Assert that they accept the same values for scalar w each time.
             if not (accept == accept_prime).all():
                 num_failures += 1
 
