@@ -123,7 +123,7 @@ class VonMisesFisher(Distribution):
         v /= v_norm
 
         w = torch.empty(shape, dtype=self.loc.dtype, device=self.loc.device)
-        w = self._rejection_sample_wood(self.loc, self.concentration, w)
+        w = self._rejection_sample(self.loc, self.concentration, w)
 
         # Sample z' with modal vector e1 = (w; (1 - w^2) v^T)^T
         # Shape: (batch_size, m)
