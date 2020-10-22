@@ -7,13 +7,14 @@ import math
 
 def test_rejection_sample_wood_ulrich_methods_not_equivalent():
     """
-    Two implementations exist for Wood (1994)'s acceptance-rejection algorithm. This test shows that these
-    implementations, while similar in how often they accept or reject, are not identical.
+    Two algorithms exist for acceptance-rejection of change magnitude: Wood (1994) and Ulrich (1984).
 
-    Method 1: Davidson et al.'s implementation
+    This test shows that these algorithms, while similar in how often they accept or reject, are not identical.
+
+    Method 1: Ulrich (1984), Davidson et al.'s implementation
     https://github.com/nicola-decao/s-vae-pytorch/blob/master/hyperspherical_vae/distributions/von_mises_fisher.py#L86
 
-    Method 2: TensorFlow's implementation:
+    Method 2: Wood (1994), TensorFlow's implementation
     https://github.com/tensorflow/probability/blob/v0.11.1/tensorflow_probability/python/distributions/von_mises_fisher.py#L421
     and the implementation from "Spherical Latent Spaces for Stable Variational Autoencoders"
     by Jiacheng Xu, Greg Durrett
