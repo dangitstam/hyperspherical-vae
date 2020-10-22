@@ -1,6 +1,5 @@
 import math
 
-import scipy.special
 import torch
 from torch.distributions import constraints
 from torch.distributions.beta import Beta
@@ -284,8 +283,6 @@ class VonMisesFisher(Distribution):
         return (
             (self._m / 2 - 1) * torch.log(self.concentration)
             - (self._m / 2) * math.log(2 * math.pi)
-            # TODO: Paper uses `ive`, but log applied to normailzation results in a log(I_v(...)) term:
-            # https://github.com/nicola-decao/s-vae-pytorch/blob/master/hyperspherical_vae/distributions/von_mises_fisher.py#L202
-            # Keeping `log(I_v(...))` to match the algebra more accurately.
-            - torch.log(scipy.special.iv(self._m / 2 - 1, self.concentration))
+            # Note: log(Iv(x)) = x + log(e^(-x) * Iv(x))
+            - (self.concentration + torch.log(ive(self._m / 2 - 1, self.concentration)))
         )
