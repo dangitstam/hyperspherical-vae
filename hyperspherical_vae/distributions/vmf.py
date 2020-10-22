@@ -130,8 +130,6 @@ class VonMisesFisher(Distribution):
 
     def entropy(self):
         """
-        TODO: See KL-divergence derivation in Davidson paper and implement it.
-        TODO: Implement hyperspherical uniform (needed for KL-divergence)
         """
         pass
 
