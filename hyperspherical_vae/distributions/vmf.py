@@ -286,7 +286,7 @@ class VonMisesFisher(Distribution):
 
     def _log_prob_unnormalized(self, x: torch.Tensor):
         return (
-            self.concentration.unsqueeze(-1).repeat(1, 5)
+            self.concentration.unsqueeze(-1).repeat(1, self._m)
             * self.loc  # Shape: (batch_size, m)
             * x  # Shape: (batch_size, m)
         ).sum(
