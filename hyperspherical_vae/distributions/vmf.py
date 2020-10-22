@@ -27,7 +27,7 @@ class VonMisesFisher(Distribution):
         self,
         loc: torch.Tensor,
         concentration: torch.Tensor,
-        change_magnitude_sampling_algorithm="wood",
+        change_magnitude_sampling_algorithm: str = "wood",
     ):
         if loc.dim() < 1:
             raise ValueError("loc must be at least one-dimensional.")
@@ -135,20 +135,8 @@ class VonMisesFisher(Distribution):
         # Shape: (batch_size, m).
         return torch.matmul(householder_transform, z_prime.unsqueeze(-1)).squeeze(-1)
 
-    def log_prob(self, value):
+    def log_prob(self, value: torch.Tensor):
         return self._log_prob_unnormalized(value) + self._log_prob_normalization()
-
-    def cdf(self, value):
-        pass
-
-    def icdf(self, value):
-        pass
-
-    def enumerate_support(self, expand=True):
-        pass
-
-    def entropy(self):
-        pass
 
     def kl_divergence(self):
         """
@@ -264,6 +252,12 @@ class VonMisesFisher(Distribution):
 
     @staticmethod
     def _householder_transform(mean: torch.Tensor, e1: torch.Tensor):
+        """
+        The Householder transform.
+
+        An orthogonal transformation that rotates a sample such that
+        the rotated sample is distributed according to the von-Mises Fisher.
+        """
         if mean.dim() < 1:
             raise ValueError("mean must be at least one-dimensional.")
 
