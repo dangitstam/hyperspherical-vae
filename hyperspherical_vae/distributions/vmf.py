@@ -65,15 +65,12 @@ class VonMisesFisher(Distribution):
         # Distribution is set on the `(self._m - 1)` sphere.
         self._m = self.loc.shape[-1]
 
-        batch_shape = torch.Size([loc.shape[0]])
+        batch_shape = loc.shape
         event_shape = torch.Size()
 
         super(VonMisesFisher, self).__init__(
             batch_shape=batch_shape, event_shape=event_shape
         )
-
-    def expand(self, batch_shape, _instance=None):
-        pass
 
     @property
     def mean(self):
@@ -105,25 +102,25 @@ class VonMisesFisher(Distribution):
                 "sample_shape {} unsupported, currently only batched predictions are supported"
             )
 
-        shape = self._extended_shape(sample_shape)
+        shape = self._extended_shape(sample_shape)  # Shape: (batch_size, m).
         batch_size = shape[0]
 
-        # Batched modal vector (1,0,...,0). Shape: (batch_size, m).
-        # Transpose to expose individual vector dimension m, and set the first value of each vector to 1.
-        e1 = torch.zeros(shape + torch.Size([self._m]))
+        # Batched modal vector ((1,0,...,0) repeated batch_size-number of times).
+        e1 = torch.zeros(shape)  # Shape: (batch_size, m).
         e1.T[0] = 1
 
         # Sample vector v ~ U(S^(m - 2)) by sampling (batch_size, m - 1) values
         # from a Gaussian and normalize each (m - 1)-sized vector (Muller 1959, Marsaglia 1972).
-        v = torch.randn(batch_size, self._m - 1)
-        v_norm = v.sum(-1)  # Shape: (batch_size,)
+        v = torch.randn(batch_size, self._m - 1)  # Shape: (batch_size, self._m - 1)
+        v_norm = (v * v).sum(-1)  # Shape: (batch_size,)
+        v_norm = torch.sqrt(v_norm)
         v_norm = v_norm.unsqueeze(-1)  # Shape: (batch_size, 1)
         v_norm = v_norm.repeat(1, self._m - 1)  # Shape: (batch_size, self._m - 1)
 
         v /= v_norm
 
-        w = torch.empty(shape, dtype=self.loc.dtype, device=self.loc.device)
-        w = self._rejection_sample(self.loc, self.concentration, w)
+        w = torch.empty(torch.Size([batch_size]), dtype=self.loc.dtype, device=self.loc.device)  # Shape: (batch_size,)
+        w = self._rejection_sample(self.loc, self.concentration, w)  # Shape: (batch_size,)
 
         # Sample z' with modal vector e1 = (w; (1 - w^2) v^T)^T
         # Shape: (batch_size, m)
