@@ -32,6 +32,14 @@ class VonMisesFisher(Distribution):
         if loc.dim() < 1:
             raise ValueError("loc must be at least one-dimensional.")
 
+        # TODO: Some torch distributions will repeat a parameter like this if only one is defined.
+        if loc.shape[0] != concentration.shape[0]:
+            raise ValueError(
+                "batch size for loc ({}) and concentration ({}) differ; concentration should be defined for each mean".format(
+                    loc.shape[0], concentration.shape[0]
+                )
+            )
+
         if change_magnitude_sampling_algorithm.lower() not in ("wood", "ulrich"):
             raise ValueError(
                 "unsupported rejection algorithm {}".format(
@@ -42,14 +50,6 @@ class VonMisesFisher(Distribution):
         # For single batches, unsqueeze to (batch_size, dimension) where batch_size = 1.
         if loc.dim() == 1:
             loc = loc.unsqueeze(0)
-
-        # TODO: Some torch distributions will repeat a parameter like this if only one is defined.
-        if loc.shape[0] != concentration.shape[0]:
-            raise ValueError(
-                "batch size for loc ({}) and concentration ({}) differ; concentration should be defined for each mean".format(
-                    loc.shape[0], concentration.shape[0]
-                )
-            )
 
         self.loc = loc  # Shape: (batch_size, m)
         self.concentration = concentration  # Shape: (batch_size,)
