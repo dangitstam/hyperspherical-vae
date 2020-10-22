@@ -13,7 +13,7 @@ class VonMisesFisher(Distribution):
     """
     The von Mises–Fisher distribution.
 
-    TODO: Enable multiple implementations (e.g. choose rejection sampling method and whether to use householder).
+    TODO: Enable multiple implementations (e.g. choose whether to use householder).
     TODO: Perhaps buy the Wood (1994) paper...
     """
 
@@ -23,9 +23,21 @@ class VonMisesFisher(Distribution):
     }
     support = constraints.real
 
-    def __init__(self, loc: torch.Tensor, concentration: torch.Tensor):
+    def __init__(
+        self,
+        loc: torch.Tensor,
+        concentration: torch.Tensor,
+        change_magnitude_sampling_algorithm="wood",
+    ):
         if loc.dim() < 1:
             raise ValueError("loc must be at least one-dimensional.")
+
+        if change_magnitude_sampling_algorithm.lower() not in ("wood", "ulrich"):
+            raise ValueError(
+                "unsupported rejection algorithm {}".format(
+                    change_magnitude_sampling_algorithm
+                )
+            )
 
         # For single batches, unsqueeze to (batch_size, dimension) where batch_size = 1.
         if loc.dim() == 1:
@@ -41,6 +53,14 @@ class VonMisesFisher(Distribution):
 
         self.loc = loc  # Shape: (batch_size, m)
         self.concentration = concentration  # Shape: (batch_size,)
+
+        change_magnitude_sampling_algorithms = {
+            "wood": self._rejection_sample_wood,
+            "ulrich": self._rejection_sample_ulrich,
+        }
+        self._rejection_sample = change_magnitude_sampling_algorithms[
+            change_magnitude_sampling_algorithm
+        ]
 
         # Distribution is set on the `(self._m - 1)` sphere.
         self._m = self.loc.shape[-1]
@@ -128,8 +148,6 @@ class VonMisesFisher(Distribution):
         pass
 
     def entropy(self):
-        """
-        """
         pass
 
     def kl_divergence(self):
