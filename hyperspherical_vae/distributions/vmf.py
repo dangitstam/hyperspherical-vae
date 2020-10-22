@@ -102,7 +102,6 @@ class VonMisesFisher(Distribution):
 
         v /= v_norm
 
-        # TODO: Allow rejection sample helper functions define the empty starting `w`.
         w = torch.empty(shape, dtype=self.loc.dtype, device=self.loc.device)
         w = self._rejection_sample_wood(self.loc, self.concentration, w)
 
