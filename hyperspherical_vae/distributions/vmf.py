@@ -138,24 +138,23 @@ class VonMisesFisher(Distribution):
     def kl_divergence(self):
         """
         The KL-divergence KL(q(z | u, k) || U(S^(m - 1))) of the von-Mises Fisher
-        against the uniform distribution on the m-dimensional unit hypersphere.
+        against the uniform distribution on the m-dimensional unit hypersphere,
+        as derived by Davidson et al. in "Hyperspherical Variational Auto-Encoders."
         """
-
-        # TODO: These variable names are potentially misleading.
-        vmf_entropy = (
-            self.concentration
-            * ive(self._m / 2, self.concentration)
-            / ive(self._m / 2 - 1, self.concentration)
-        ) + self._log_prob_normalization()
-
-        # The log surface area of the hypersphere.
-        hyperspherical_uniform_entropy = (
-            (self._m / 2) * math.log(math.pi)
-            + math.log(2)
-            - torch.lgamma(torch.Tensor([self._m / 2]))
+        return (
+            (
+                self.concentration
+                * ive(self._m / 2, self.concentration)
+                / ive(self._m / 2 - 1, self.concentration)
+            )
+            + self._log_prob_normalization()
+            # Subtracting the log surface area of the hypersphere.
+            + (
+                (self._m / 2) * math.log(math.pi)
+                + math.log(2)
+                - torch.lgamma(torch.Tensor([self._m / 2]))
+            )
         )
-
-        return vmf_entropy + hyperspherical_uniform_entropy
 
     @staticmethod
     def _rejection_sample_ulrich(
