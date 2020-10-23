@@ -5,6 +5,7 @@ from hyperspherical_vae.distributions.vmf import VonMisesFisher
 
 import math
 
+
 def test_vmf_samples_shape():
     concentration = torch.tensor(
         [
@@ -69,6 +70,39 @@ def test_vmf_samples_are_unit_vectors():
     expected_norm = torch.ones(sample_norm.size())
 
     assert torch.all(torch.isclose(sample_norm, expected_norm))
+
+
+def test_vmf_samples_positive_kl_divergence():
+    concentration = torch.tensor(
+        [
+            1,
+            5,
+            10,
+            50.0,
+            75,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            1000,
+            5000,
+            10000.0,
+        ]
+    )
+    loc = torch.randn([19, 8])
+    loc /= loc.norm(dim=-1).unsqueeze(-1).repeat(1, 8)
+    vmf = VonMisesFisher(loc, concentration)
+
+    kl_divergence = vmf.kl_divergence()
+
+    assert torch.all(kl_divergence >= 0)
 
 
 def test_rejection_sample_wood_ulrich_methods_not_equivalent():
