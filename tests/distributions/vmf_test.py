@@ -5,6 +5,37 @@ from hyperspherical_vae.distributions.vmf import VonMisesFisher
 
 import math
 
+def test_vmf_samples_shape():
+    concentration = torch.tensor(
+        [
+            1,
+            5,
+            10,
+            50.0,
+            75,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            1000,
+            5000,
+            10000.0,
+        ]
+    )
+    loc = torch.randn([19, 8])
+    loc /= loc.norm(dim=-1).unsqueeze(-1).repeat(1, 8)
+    vmf = VonMisesFisher(loc, concentration)
+    sample = vmf.rsample()
+
+    assert sample.size() == loc.size()
+
 
 def test_vmf_samples_are_unit_vectors():
     concentration = torch.tensor(
