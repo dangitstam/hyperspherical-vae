@@ -112,15 +112,21 @@ class VonMisesFisher(Distribution):
         # Sample vector v ~ U(S^(m - 2)) by sampling (batch_size, m - 1) values
         # from a Gaussian and normalize each (m - 1)-sized vector (Muller 1959, Marsaglia 1972).
         v = torch.randn(batch_size, self._m - 1)  # Shape: (batch_size, self._m - 1)
-        v_norm = v.norm(dim=-1).unsqueeze(-1).repeat(1, self._m - 1)  # Shape: (batch_size, self._m - 1)
+        v_norm = (
+            v.norm(dim=-1).unsqueeze(-1).repeat(1, self._m - 1)
+        )  # Shape: (batch_size, self._m - 1)
         v /= v_norm
 
-        w = torch.empty(torch.Size([batch_size]), dtype=self.loc.dtype, device=self.loc.device)  # Shape: (batch_size,)
-        w = self._rejection_sample(self.loc, self.concentration, w)  # Shape: (batch_size,)
+        w = torch.empty(
+            torch.Size([batch_size]), dtype=self.loc.dtype, device=self.loc.device
+        )  # Shape: (batch_size,)
+        w = self._rejection_sample(
+            self.loc, self.concentration, w
+        )  # Shape: (batch_size,)
 
         # Sample z' with modal vector e1 = (w; (1 - w^2) v^T)^T
         # Shape: (batch_size, m)
-        z_prime = torch.cat([w.unsqueeze(0), (1 - w ** 2) * v.T]).T
+        z_prime = torch.cat([w.unsqueeze(0), torch.sqrt((1 - w ** 2)) * v.T]).T
 
         # Shape: (batch_size, m, m)
         householder_transform = self._householder_transform(self.loc, e1)
@@ -258,7 +264,9 @@ class VonMisesFisher(Distribution):
         m = mean.shape[-1]
 
         mean_prime = e1 - mean  # Shape: (batch_size, m)
-        mean_prime_norm = mean_prime.norm(dim=-1).unsqueeze(-1).repeat(1, m)  # Shape: (batch_size, m)
+        mean_prime_norm = (
+            mean_prime.norm(dim=-1).unsqueeze(-1).repeat(1, m)
+        )  # Shape: (batch_size, m)
         mean_prime /= mean_prime_norm  # Shape: (batch_size, m)
 
         # Shape: (batch_size, m, m)
