@@ -112,11 +112,7 @@ class VonMisesFisher(Distribution):
         # Sample vector v ~ U(S^(m - 2)) by sampling (batch_size, m - 1) values
         # from a Gaussian and normalize each (m - 1)-sized vector (Muller 1959, Marsaglia 1972).
         v = torch.randn(batch_size, self._m - 1)  # Shape: (batch_size, self._m - 1)
-        v_norm = (v * v).sum(-1)  # Shape: (batch_size,)
-        v_norm = torch.sqrt(v_norm)
-        v_norm = v_norm.unsqueeze(-1)  # Shape: (batch_size, 1)
-        v_norm = v_norm.repeat(1, self._m - 1)  # Shape: (batch_size, self._m - 1)
-
+        v_norm = v.norm(dim=-1).unsqueeze(-1).repeat(1, self._m - 1)  # Shape: (batch_size, self._m - 1)
         v /= v_norm
 
         w = torch.empty(torch.Size([batch_size]), dtype=self.loc.dtype, device=self.loc.device)  # Shape: (batch_size,)
@@ -262,7 +258,8 @@ class VonMisesFisher(Distribution):
         m = mean.shape[-1]
 
         mean_prime = e1 - mean  # Shape: (batch_size, m)
-        mean_prime /= mean_prime.sum()  # Shape: (batch_size, m)
+        mean_prime_norm = mean_prime.norm(dim=-1).unsqueeze(-1).repeat(1, m)  # Shape: (batch_size, m)
+        mean_prime /= mean_prime_norm  # Shape: (batch_size, m)
 
         # Shape: (batch_size, m, m)
         batch_identity_matrix = torch.diag(torch.ones(m)).repeat(batch_size, 1, 1)
