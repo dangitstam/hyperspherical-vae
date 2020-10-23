@@ -124,7 +124,7 @@ class VonMisesFisher(Distribution):
             self.loc, self.concentration, w
         )  # Shape: (batch_size,)
 
-        # Sample z' with modal vector e1 = (w; (1 - w^2) v^T)^T
+        # Sample z' with modal vector e1 = (w; sqrt(1 - w^2) v^T)^T
         # Shape: (batch_size, m)
         z_prime = torch.cat([w.unsqueeze(0), torch.sqrt((1 - w ** 2)) * v.T]).T
 
