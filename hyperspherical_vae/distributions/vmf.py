@@ -40,6 +40,11 @@ class VonMisesFisher(Distribution):
                 )
             )
 
+        if concentration.dim() > 1:
+            # Squeeze from (batch_size, 1) to (batch_size,)
+            # TODO: When logging is set up, log this.
+            concentration = concentration.squeeze(-1)
+
         if change_magnitude_sampling_algorithm.lower() not in ("wood", "ulrich"):
             raise ValueError(
                 "unsupported rejection algorithm {}".format(
