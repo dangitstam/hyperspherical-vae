@@ -183,7 +183,7 @@ class VonMisesFisher(Distribution):
             + (
                 (self._m / 2) * math.log(math.pi)
                 + math.log(2)
-                - torch.lgamma(torch.Tensor([self._m / 2]))
+                - torch.lgamma(torch.tensor(self._m / 2))
             )
         )
 
