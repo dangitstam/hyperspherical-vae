@@ -1,0 +1,8 @@
+# Automatic code formatting
+black==20.8b1
+
+# SciPy
+scipy>=1.5.2
+
+# PyTorch
+torch>=1.4.0

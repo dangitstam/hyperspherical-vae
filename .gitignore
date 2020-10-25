@@ -1,0 +1,10 @@
+# dev tools
+
+.idea
+.vscode/
+
+# python
+
+*.pyc
+*.pyo
+__pycache__
