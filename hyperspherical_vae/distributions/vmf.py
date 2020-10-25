@@ -117,7 +117,7 @@ class VonMisesFisher(Distribution):
 
     def rsample(self, sample_shape=torch.Size()):
         """
-        TODO: Handle `sample_shape` to allow `sample_shape + torch.Size([batch_size, self._m])`-sized predictions.
+        TODO: How should `sample_shape` be handled?
         """
         if sample_shape != torch.Size():
             raise ValueError(
