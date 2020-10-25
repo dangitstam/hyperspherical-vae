@@ -32,17 +32,32 @@ class VonMisesFisher(Distribution):
         if loc.dim() < 1:
             raise ValueError("loc must be at least one-dimensional.")
 
+        if concentration.dim() > 2 or concentration.shape[-1] != 1:
+            raise ValueError(
+                """
+                `concentration` should be a tensor of a single value with shape (1,) 
+                or batched with shapes (batch_size,) or (batch_size, 1); got {} instead
+                """.format(
+                    concentration.size()
+                )
+            )
+
         # TODO: Some torch distributions will repeat a parameter like this if only one is defined.
         if loc.shape[0] != concentration.shape[0]:
             raise ValueError(
-                "batch size for loc ({}) and concentration ({}) differ; concentration should be defined for each mean".format(
+                """
+                batch size for loc ({}) and concentration ({}) differ; 
+                concentration should be defined for each mean
+                """.format(
                     loc.shape[0], concentration.shape[0]
                 )
             )
 
+        # Invariant: `self.concentration` should always have the shape (batch_size,).
+        # Feedforward layers may project to a single dimension and produce shape (batch_size, 1).
+        # Computing batched latent representations (w; sqrt(1 - w^t) v.T)^T however requires (batch_size,) for proper
+        # matrix multiply.
         if concentration.dim() > 1:
-            # Squeeze from (batch_size, 1) to (batch_size,)
-            # TODO: Refactor this, torch linear layers that project to a single dimension will produce (batch_size, 1).
             concentration = concentration.squeeze(-1)
 
         if change_magnitude_sampling_algorithm.lower() not in ("wood", "ulrich"):
