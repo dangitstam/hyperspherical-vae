@@ -73,6 +73,17 @@ class VonMisesFisher(Distribution):
         if loc.dim() == 1:
             loc = loc.unsqueeze(0)
 
+        loc_norm = loc.norm(dim=-1)
+        if not torch.all(torch.isclose(loc_norm, torch.ones(loc_norm.size()))):
+            raise ValueError(
+                """
+                loc is not normalized; loc should be either a normalized tensor or
+                a batched tensor normalized in the final dimension, instead L2 norm(s) of loc is {}
+                """.format(
+                    loc_norm
+                )
+            )
+
         self.loc = loc  # Shape: (batch_size, m)
         self.concentration = concentration  # Shape: (batch_size,)
 
