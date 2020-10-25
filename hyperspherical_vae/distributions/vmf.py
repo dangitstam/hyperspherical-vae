@@ -276,8 +276,8 @@ class VonMisesFisher(Distribution):
         """
         The Householder transform.
 
-        An orthogonal transformation that rotates a sample such that
-        the rotated sample is distributed according to the von-Mises Fisher.
+        Given that `mean` is the mean of a von-Mises Fisher distribution, results in an orthogonal transformation that
+        rotates a sample z' ~ q(z | `e1`, k) such that the rotated sample is distributed according to q(z | `mean`, k).
         """
         if mean.dim() < 1:
             raise ValueError("mean must be at least one-dimensional.")
