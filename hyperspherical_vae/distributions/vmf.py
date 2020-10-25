@@ -32,7 +32,9 @@ class VonMisesFisher(Distribution):
         if loc.dim() < 1:
             raise ValueError("loc must be at least one-dimensional.")
 
-        if concentration.dim() > 2 or concentration.shape[-1] != 1:
+        if concentration.dim() > 2 or (
+            concentration.dim() == 2 and concentration.shape[-1] != 1
+        ):
             raise ValueError(
                 """
                 `concentration` should be a tensor of a single value with shape (1,) 
