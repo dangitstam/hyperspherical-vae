@@ -107,10 +107,6 @@ class VonMisesFisher(Distribution):
             / ive(self._m / 2, self.concentration)
         )
 
-    @property
-    def variance(self):
-        return None
-
     @torch.no_grad()
     def sample(self, sample_shape=torch.Size()):
         return self.rsample(sample_shape)
