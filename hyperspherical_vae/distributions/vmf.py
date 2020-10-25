@@ -64,7 +64,7 @@ class VonMisesFisher(Distribution):
 
         if change_magnitude_sampling_algorithm.lower() not in ("wood", "ulrich"):
             raise ValueError(
-                "unsupported rejection algorithm {}".format(
+                "unsupported change magnitude sampling algorithm: {}".format(
                     change_magnitude_sampling_algorithm
                 )
             )
