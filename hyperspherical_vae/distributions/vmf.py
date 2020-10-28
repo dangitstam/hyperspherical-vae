@@ -171,6 +171,8 @@ class VonMisesFisher(Distribution):
         The KL-divergence KL(q(z | u, k) || U(S^(m - 1))) of the von-Mises Fisher
         against the uniform distribution on the m-dimensional unit hypersphere,
         as derived by Davidson et al. in "Hyperspherical Variational Auto-Encoders."
+
+        TODO: Should this become a registerd torch KL-divergence that takes a vMF and hyperspherical uniform prior?
         """
         return (
             (
