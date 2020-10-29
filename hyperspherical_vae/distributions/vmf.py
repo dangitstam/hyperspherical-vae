@@ -44,6 +44,10 @@ class VonMisesFisher(Distribution):
                 )
             )
 
+        # For single batches, unsqueeze to (batch_size, dimension) where batch_size = 1.
+        if loc.dim() == 1:
+            loc = loc.unsqueeze(0)
+
         # TODO: Some torch distributions will repeat a parameter like this if only one is defined.
         if loc.shape[0] != concentration.shape[0]:
             raise ValueError(
@@ -68,10 +72,6 @@ class VonMisesFisher(Distribution):
                     change_magnitude_sampling_algorithm
                 )
             )
-
-        # For single batches, unsqueeze to (batch_size, dimension) where batch_size = 1.
-        if loc.dim() == 1:
-            loc = loc.unsqueeze(0)
 
         loc_norm = loc.norm(dim=-1)
         if not torch.all(torch.isclose(loc_norm, torch.ones(loc_norm.size()))):
@@ -297,7 +297,8 @@ class VonMisesFisher(Distribution):
         mean_prime = e1 - mean  # Shape: (batch_size, m)
         mean_prime_norm = (
             # Prevent division by 0 when the mean is also the modal vector.
-            mean_prime.norm(dim=-1).unsqueeze(-1).repeat(1, m) + 1e-6
+            mean_prime.norm(dim=-1).unsqueeze(-1).repeat(1, m)
+            + 1e-6
         )  # Shape: (batch_size, m)
         mean_prime /= mean_prime_norm  # Shape: (batch_size, m)
 

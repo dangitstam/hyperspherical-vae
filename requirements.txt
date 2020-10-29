@@ -6,3 +6,7 @@ scipy>=1.5.2
 
 # PyTorch
 torch>=1.4.0
+
+# Visualizations
+matplotlib~=3.3.2
+seaborn~=0.11.0
