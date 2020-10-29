@@ -296,7 +296,8 @@ class VonMisesFisher(Distribution):
 
         mean_prime = e1 - mean  # Shape: (batch_size, m)
         mean_prime_norm = (
-            mean_prime.norm(dim=-1).unsqueeze(-1).repeat(1, m)
+            # Prevent division by 0 when the mean is also the modal vector.
+            mean_prime.norm(dim=-1).unsqueeze(-1).repeat(1, m) + 1e-6
         )  # Shape: (batch_size, m)
         mean_prime /= mean_prime_norm  # Shape: (batch_size, m)
 
@@ -305,8 +306,8 @@ class VonMisesFisher(Distribution):
 
         # Shape: (batch_size, m, m)
         householder_transform = batch_identity_matrix - 2 * torch.matmul(
-            mean.unsqueeze(-1),  # Shape: (batch_size, m, 1)
-            mean.unsqueeze(-1).permute(0, 2, 1),  # Shape: (batch_size, 1, m)
+            mean_prime.unsqueeze(-1),  # Shape: (batch_size, m, 1)
+            mean_prime.unsqueeze(-1).permute(0, 2, 1),  # Shape: (batch_size, 1, m)
         )
 
         return householder_transform
