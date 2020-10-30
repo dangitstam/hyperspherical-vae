@@ -6,6 +6,11 @@ import torch
 
 from hyperspherical_vae.distributions.vmf import VonMisesFisher
 
+from torch.utils.data import DataLoader
+
+
+NUM_SAMPLES = 500
+
 
 def main():
     sns.set_theme()
@@ -14,23 +19,36 @@ def main():
     axes.set_ylim([-2, 2])
     plt.gca().set_aspect("equal", adjustable="box")
 
-    mean_1 = torch.tensor([1.0, 0.0])
+    mean_1 = torch.tensor([math.sqrt(3) / 2, -1 / 2])
     mean_2 = torch.tensor([-math.sqrt(2) / 2, -math.sqrt(2) / 2])
-    mean_3 = torch.tensor([1 / 2, math.sqrt(3) / 2])
+    mean_3 = torch.tensor([-1 / 2, math.sqrt(3) / 2])
 
-    vmf_1 = VonMisesFisher(mean_1, torch.tensor([50.0]))
-    vmf_2 = VonMisesFisher(mean_2, torch.tensor([50.0]))
-    vmf_3 = VonMisesFisher(mean_3, torch.tensor([50.0]))
+    vmf_1 = VonMisesFisher(mean_1, torch.tensor([5.0]))
+    vmf_2 = VonMisesFisher(mean_2, torch.tensor([10.0]))
+    vmf_3 = VonMisesFisher(mean_3, torch.tensor([2.0]))
 
-    for i in range(50):
-        x_1, y_1 = vmf_1.sample().squeeze().tolist()
+    training_data = []
+
+    for i in range(NUM_SAMPLES):
+        sample_1 = vmf_1.sample()
+        x_1, y_1 = sample_1.squeeze().tolist()
         plt.scatter(x_1, y_1, color="r", marker=".")
 
-        x_2, y_2 = vmf_2.sample().squeeze().tolist()
+        sample_2 = vmf_2.sample()
+        x_2, y_2 = sample_2.squeeze().tolist()
         plt.scatter(x_2, y_2, color="g", marker=".")
 
-        x_3, y_3 = vmf_3.sample().squeeze().tolist()
+        sample_3 = vmf_3.sample()
+        x_3, y_3 = sample_3.squeeze().tolist()
         plt.scatter(x_3, y_3, color="m", marker=".")
+
+        training_data.append(sample_1)
+        training_data.append(sample_2)
+        training_data.append(sample_3)
+
+    training_dataloader = DataLoader(
+        training_data, batch_size=4, shuffle=True, num_workers=4
+    )
 
     plt.show()
 
