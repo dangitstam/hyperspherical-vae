@@ -12,6 +12,26 @@ from torch.utils.data import DataLoader
 NUM_SAMPLES = 500
 
 
+def noisy_nonlinear_transformation(x: torch.Tensor, target_dim: int):
+    """
+    Given a tensor X of size (batch_size, hidden_dim), returns a nonlinear transformation of X
+    of size (batch_size, target_dim)
+    """
+    hidden_dim = x.shape[-1]
+
+    # Noise to add to the input.
+    gaussian_noise = torch.randn(x.size())
+
+    # Noisy projection from `hidden_dim` to `target_dim`.
+    # TODO: This tensor should be the same each time, not a fresh sampling of random values.
+    projection_to_target_dim = torch.randn(size=torch.Size([hidden_dim, target_dim]))
+
+    # The reciprocal root serves as the nonlinear transformation.
+    x_prime = 1 / torch.matmul(x + gaussian_noise, projection_to_target_dim)
+
+    return x_prime
+
+
 def main():
     sns.set_theme()
     axes = plt.gca()
