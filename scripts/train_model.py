@@ -8,7 +8,21 @@ from hyperspherical_vae.distributions.vmf import VonMisesFisher
 
 from torch.utils.data import DataLoader
 
+
 NUM_SAMPLES = 500
+
+
+def create_noisy_nonlinear_transformation(input_dim: int, target_dim: int):
+    """
+    Given a tensor of size (hidden_dim, target_dim), returns a function that given a tensor x,
+    produces a noisy, nonlinear transformation x' of size (batch_size, target_dim).
+    """
+    projection = torch.randn(input_dim, target_dim)
+
+    # Gaussian noise is added to the input before projection to the target dim.
+    # Each example will have it's own distinct noise.
+    # The reciprocal serves as the nonlinear transformation.
+    return lambda x: 1 / torch.matmul(x + torch.randn(x.size()), projection)
 
 
 def main():
@@ -26,6 +40,13 @@ def main():
     vmf_2 = VonMisesFisher(mean_2, torch.tensor([10.0]))
     vmf_3 = VonMisesFisher(mean_3, torch.tensor([2.0]))
 
+    # TODO: Move this to a docstring.
+    # A VAE with a hidden dim of 2 will be trained on 100-dimensional inputs
+    # created via noisy,nonlinear transformation of the 2-dimensional vMF samples.
+    # At evaluation time, the VAE will be given additional samples and the
+    # 2-dimensional latent vectors will be plotted to verify that the VAE can learn
+    # a circular latent space.
+    noisy_nonlinear_transformation = create_noisy_nonlinear_transformation(2, 100)
     training_data = []
 
     for i in range(NUM_SAMPLES):
@@ -41,9 +62,9 @@ def main():
         x_3, y_3 = sample_3.squeeze().tolist()
         plt.scatter(x_3, y_3, color="m", marker=".")
 
-        training_data.append(sample_1)
-        training_data.append(sample_2)
-        training_data.append(sample_3)
+        training_data.append(noisy_nonlinear_transformation(sample_1))
+        training_data.append(noisy_nonlinear_transformation(sample_1))
+        training_data.append(noisy_nonlinear_transformation(sample_1))
 
     training_dataloader = DataLoader(
         training_data, batch_size=4, shuffle=True, num_workers=4
