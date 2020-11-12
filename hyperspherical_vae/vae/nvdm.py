@@ -3,7 +3,7 @@ import torch
 from hyperspherical_vae.distributions.vmf import VonMisesFisher
 
 
-class NVDM(torch.nn.Module):
+class NVDM(torch.nn.Module):  # TODO: Rename this class.
     def __init__(self, input_dim: int, hidden_dim: int):
         """
         TODO: Parameters for m (# of dimensions), type of reconstruction loss (binary cross entropy, MSE).

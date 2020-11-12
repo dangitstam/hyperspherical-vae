@@ -1,5 +1,6 @@
 import math
 
+from hyperspherical_vae.vae import NVDM
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
@@ -23,6 +24,16 @@ def create_noisy_nonlinear_transformation(input_dim: int, target_dim: int):
     # Each example will have it's own distinct noise.
     # The reciprocal serves as the nonlinear transformation.
     return lambda x: 1 / torch.matmul(x + torch.randn(x.size()), projection)
+
+
+def training_epoch(nvdm: NVDM, training_dataloader: DataLoader):
+    # Iterate over (batch_size, input_dim) examples.
+    for example in iter(training_dataloader):
+        pass
+
+
+def train(nvdm: NVDM, training_dataloader: DataLoader):
+    pass
 
 
 def main():
@@ -62,9 +73,9 @@ def main():
         x_3, y_3 = sample_3.squeeze().tolist()
         plt.scatter(x_3, y_3, color="m", marker=".")
 
-        training_data.append(noisy_nonlinear_transformation(sample_1))
-        training_data.append(noisy_nonlinear_transformation(sample_1))
-        training_data.append(noisy_nonlinear_transformation(sample_1))
+        training_data.append(noisy_nonlinear_transformation(sample_1.squeeze()))
+        training_data.append(noisy_nonlinear_transformation(sample_2.squeeze()))
+        training_data.append(noisy_nonlinear_transformation(sample_3.squeeze()))
 
     training_dataloader = DataLoader(
         training_data, batch_size=4, shuffle=True, num_workers=4
