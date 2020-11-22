@@ -1,1 +1,1 @@
-from hyperspherical_vae.vae.nvdm import NVDM
+from hyperspherical_vae.vae.spherical_vae import SphericalVAE
