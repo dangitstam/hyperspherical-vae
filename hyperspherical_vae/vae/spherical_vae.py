@@ -22,7 +22,7 @@ class SphericalVAE(torch.nn.Module):  # TODO: Rename this class.
         self.concentration_encoder = torch.nn.Sequential(
             torch.nn.Linear(hidden_dim, 1),
             # TODO: Concentration always needs to be non-negative; is this the way to do it?
-            torch.nn.GELU(),
+            torch.nn.ReLU(),
         )
         self.decoder = torch.nn.Sequential(
             torch.nn.Linear(latent_dim, hidden_dim),
@@ -50,7 +50,7 @@ class SphericalVAE(torch.nn.Module):  # TODO: Rename this class.
         # More specifically, since the log modified Bessel is used, the instability is introduced when
         # log(Iv(m/2, 0)) = log(0). This also prevents collapsing into the uniform prior.
         concentration = (
-            self.concentration_encoder(x_initial_projection) + 1
+            self.concentration_encoder(x_initial_projection) + 10  # TODO: Should concentration be fixed?
         )  # Shape: (batch_size,)
 
         vmf = VonMisesFisher(mean, concentration)

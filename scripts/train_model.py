@@ -13,9 +13,9 @@ from hyperspherical_vae.distributions.vmf import VonMisesFisher
 from torch.utils.data import DataLoader
 
 
-NUM_SAMPLES = 100
-BATCH_SIZE = 5
-NUM_EPOCHS = 10
+NUM_SAMPLES = 500
+BATCH_SIZE = 64
+NUM_EPOCHS = 50
 
 
 def create_noisy_nonlinear_transformation(input_dim: int, target_dim: int):
@@ -24,16 +24,17 @@ def create_noisy_nonlinear_transformation(input_dim: int, target_dim: int):
     produces a noisy, nonlinear transformation x' of size (batch_size, target_dim).
     """
     projection = torch.randn(input_dim, target_dim)
+    shift = torch.randn(input_dim)
 
     # Gaussian noise is added to the input before projection to the target dim.
     # Each example will have it's own distinct noise.
-    # The reciprocal serves as the nonlinear transformation.
-    return lambda x: torch.matmul(x, projection)
+    # The shift serves as the nonlinear transformation.
+    return lambda x: torch.matmul(x + shift, projection)
 
 
 def training_epoch(model: SphericalVAE, training_dataloader: DataLoader):
     # Iterate over (batch_size, input_dim) examples.
-    optimizer = optim.SGD(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
     t = tqdm(iter(training_dataloader))
     total_loss = 0
     for example in t:
